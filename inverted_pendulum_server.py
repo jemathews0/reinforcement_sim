@@ -6,7 +6,9 @@ import json
 import matplotlib.animation as anim
 import matplotlib.pyplot as plt
 import numpy as np
+import struct
 import zmq
+
 
 def main():
     u = 0
@@ -30,16 +32,18 @@ def main():
     timestep = 0.01
 
     animation = anim.FuncAnimation(
-            vis.fig,  vis.animate, producer(singlePendulumCart, socket, timestep), vis.init_patches, interval=timestep*1000, blit=True)
+        vis.fig,  vis.animate, producer(singlePendulumCart, socket, timestep), vis.init_patches, interval=timestep*1000, blit=True)
 
     plt.show()
     return animation, context, socket
 
+
 def advance_one_step(pend_cart, u, state, timestep):
-    res = solve_ivp(pend_cart.deriv, [0, timestep], state, args=[[u],0])
-    new_state = res.y[:,-1]
+    res = solve_ivp(pend_cart.deriv, [0, timestep], state, args=[[u], 0])
+    new_state = res.y[:, -1]
 
     return new_state
+
 
 def get_reward(state, u, new_state):
     if new_state[2] > np.pi/2 or new_state[2] < -np.pi/2:
@@ -49,33 +53,39 @@ def get_reward(state, u, new_state):
 
 
 def producer(pend_cart, socket, timestep):
+    APPLY_FORCE = 0
+    SET_STATE = 1
+    NEW_STATE = 2
+
     response_dict = {}
-    state = [0.,0.,0.2,0.]
+    state = [0., 0., 0.2, 0.]
     yield state
     while True:
-        command, message_str = socket.recv_multipart()
-        message_dict = json.loads(message_str.decode())
-        print("received: {} : {}".format(command, message_str))
+        message_bytes = socket.recv()
+        command, = struct.unpack('i', message_bytes[0:4])
 
-
-        if command == b'do_action':
-            u = message_dict["control_input"]
+        if command == APPLY_FORCE:
+            u, = struct.unpack('f', message_bytes[4:])
             new_state = advance_one_step(pend_cart, u, state, timestep)
-            reward = get_reward(state, u, new_state)
 
-            response_dict["new_state"] = list(new_state)
-            response_dict["reward"] = reward
-
-            response_str = json.dumps(response_dict).encode()
-
-            socket.send_multipart([b"response", response_str])
+            response_bytes = struct.pack('iffff', NEW_STATE, *new_state)
+            socket.send(response_bytes)
 
             state = new_state
-        elif command == b'set_state':
-            state = message_dict["state"]
-            socket.send_multipart([b"response", b"{}"])
+        elif command == SET_STATE:
+            x, xdot, theta, thetadot = struct.unpack('ffff', message_bytes[4:])
+            new_state = [x, xdot, theta, thetadot]
+
+
+            response_bytes = struct.pack('iffff', NEW_STATE, *new_state)
+            socket.send(response_bytes)
+
+            state = new_state
+        else:
+            print("Error: invalid command: ", command)
 
         yield state
+
 
 class Visualizer():
     def __init__(self, pend_cart):
@@ -89,7 +99,7 @@ class Visualizer():
         plt.axis('equal')
 
     def init_patches(self):
-        y = [0,0,0,0]
+        y = [0, 0, 0, 0]
         patches = self.pend_cart.draw(self.ax, y)
         for patch in patches:
             self.ax.add_patch(patch)
@@ -99,7 +109,6 @@ class Visualizer():
         patches = self.pend_cart.draw(self.ax, state)
 
         return patches
-
 
 
 if __name__ == "__main__":
