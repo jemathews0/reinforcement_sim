@@ -9,7 +9,7 @@ enum Commands {
 };
 
 struct SetStateCommand{
-    int command = SET_STATE;
+    int32_t command = SET_STATE;
     float x;
     float xdot;
     float theta;
@@ -17,12 +17,12 @@ struct SetStateCommand{
 };
 
 struct ApplyForceCommand{
-    int command = APPLY_FORCE;
+    int32_t command = APPLY_FORCE;
     float u;
 };
 
 struct NewStateCommand{
-    int command = NEW_STATE;
+    int32_t command = NEW_STATE;
     float x;
     float xdot;
     float theta;
@@ -69,7 +69,7 @@ int main ()
         zmq::message_t reply;
         zmq::recv_result_t res = socket.recv(reply, zmq::recv_flags::none);
 
-        int response_command = reinterpret_cast<int32_t*>(reply.data())[0];
+        int32_t response_command = reinterpret_cast<int32_t*>(reply.data())[0];
 
         if (response_command == NEW_STATE) {
             float* data = &(reinterpret_cast<float*>(reply.data())[1]);
