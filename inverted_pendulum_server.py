@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from scipy.integrate import solve_ivp
+import argparse
 import inverted_pendulum as ip
 import json
 import matplotlib.animation as anim
@@ -10,7 +11,7 @@ import struct
 import zmq
 
 
-def main():
+def main(args):
     u = 0
     m1 = 1
     m2 = 1
@@ -27,12 +28,18 @@ def main():
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
-    vis = Visualizer(singlePendulumCart)
-
     timestep = 0.01
 
-    animation = anim.FuncAnimation(
-        vis.fig,  vis.animate, producer(singlePendulumCart, socket, timestep), vis.init_patches, interval=timestep*1000, blit=True)
+    prod = producer(singlePendulumCart, socket, timestep)
+
+    if args.animate:
+        vis = Visualizer(singlePendulumCart)
+        animation = anim.FuncAnimation(
+            vis.fig,  vis.animate, prod, vis.init_patches, interval=timestep*1000, blit=True)
+    else:
+        for state in prod:
+            print(state)
+            pass
 
     plt.show()
     return animation, context, socket
@@ -112,4 +119,7 @@ class Visualizer():
 
 
 if __name__ == "__main__":
-    animation, context, socket = main()
+    parser = argparse.ArgumentParser(description="Simulate an inverted pendulum")
+    parser.add_argument('--animate', action='store_true')
+    args = parser.parse_args()
+    animation, context, socket = main(args)

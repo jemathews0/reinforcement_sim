@@ -43,9 +43,13 @@ close and restart the other one as well or it won't reconnect.
 
 ## Inverted pendulum server
 
+To run the server with animation of the pendulum enabled
+
 ```
-./inverted_pendulum_server.py
+./inverted_pendulum_server.py --animate
 ```
+
+To run as fast as possible, omit the animate argument
 
 ## Python example agent
 
