@@ -5,7 +5,8 @@
 enum Commands {
     APPLY_FORCE,
     SET_STATE,
-    NEW_STATE
+    NEW_STATE,
+    ANIMATE
 };
 
 struct SetStateCommand{
@@ -29,6 +30,11 @@ struct NewStateCommand{
     float thetadot;
 };
 
+struct AnimateCommand{
+    int32_t command = ANIMATE;
+    int32_t enabled;
+};
+
 
 int main ()
 {
@@ -37,10 +43,23 @@ int main ()
     zmq::socket_t socket (context, zmq::socket_type::req);
     socket.connect ("tcp://localhost:5555");
 
+    bool animation_enabled = true;
     int count = 0;
     while (true){
+        if (count % 1000 == 0 ){
+            AnimateCommand cmd;
+            animation_enabled = !animation_enabled;
+            cmd.enabled = animation_enabled;
+
+            // Copy the command object into a request message
+            zmq::message_t request (sizeof(cmd));
+            memcpy(request.data(), &cmd, sizeof(cmd));
+
+            // Send the messasge
+            socket.send(request, zmq::send_flags::none);
+        }
         // Every 1000 timesteps, reset the pendulum and cart
-        if( count % 1000 == 0) {
+        else if( count % 1000 == 1) {
             // Create and populate a command object
             SetStateCommand cmd;
             cmd.x = -2;
@@ -72,11 +91,17 @@ int main ()
         int32_t response_command = reinterpret_cast<int32_t*>(reply.data())[0];
 
         if (response_command == NEW_STATE) {
-            float* data = &(reinterpret_cast<float*>(reply.data())[1]);
-            float x = data[0];
-            float xdot = data[1];
-            float theta = data[2];
-            float thetadot = data[3];
+            NewStateCommand* newStateCmdPtr = reinterpret_cast<NewStateCommand*>(reply.data());
+
+            float x = newStateCmdPtr->x;
+            float xdot = newStateCmdPtr->xdot;
+            float theta = newStateCmdPtr->theta;
+            float thetadot = newStateCmdPtr->thetadot;
+
+        }
+        else if (response_command == ANIMATE) {
+            AnimateCommand* animateCmdPtr = reinterpret_cast<AnimateCommand*>(reply.data());
+            animation_enabled = animateCmdPtr->enabled;
         }
         else {
             std::cout << "Error: invalid command " << response_command << std::endl;

@@ -30,16 +30,11 @@ def main(args):
 
     timestep = 0.01
 
-    prod = producer(singlePendulumCart, socket, timestep)
+    prod = producer(singlePendulumCart, socket, timestep, args)
 
-    if args.animate:
-        vis = Visualizer(singlePendulumCart)
-        animation = anim.FuncAnimation(
-            vis.fig,  vis.animate, prod, vis.init_patches, interval=timestep*1000, blit=True)
-    else:
-        for state in prod:
-            print(state)
-            pass
+    vis = Visualizer(singlePendulumCart)
+    animation = anim.FuncAnimation(
+        vis.fig,  vis.animate, prod, vis.init_patches, interval=timestep*1000, blit=True)
 
     plt.show()
     return animation, context, socket
@@ -59,10 +54,11 @@ def get_reward(state, u, new_state):
         return 0
 
 
-def producer(pend_cart, socket, timestep):
+def producer(pend_cart, socket, timestep, args):
     APPLY_FORCE = 0
     SET_STATE = 1
     NEW_STATE = 2
+    ANIMATE = 3
 
     response_dict = {}
     state = [0., 0., 0.2, 0.]
@@ -88,10 +84,19 @@ def producer(pend_cart, socket, timestep):
             socket.send(response_bytes)
 
             state = new_state
+        elif command == ANIMATE:
+            enabled, = struct.unpack('i', message_bytes[4:])
+            args.animate = enabled
+
+            response_bytes = struct.pack('ii', ANIMATE, args.animate)
+            socket.send(response_bytes)
         else:
             print("Error: invalid command: ", command)
 
-        yield state
+        if args.animate:
+            yield state
+        else:
+            print(state)
 
 
 class Visualizer():
