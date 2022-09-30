@@ -99,6 +99,7 @@ def producer(pend_cart, socket, timestep, args):
             print("Error: invalid command: ", command)
 
         if args.animate:
+            print(state)
             yield state
         else:
             print(state)
