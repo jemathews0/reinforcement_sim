@@ -11,7 +11,7 @@ import matplotlib.animation as anim
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
-plt.rcParams['text.usetex'] = True
+plt.rcParams['text.usetex'] = False # change to True if you want nice thetas
 
 
 class SinglePendulumCart:
