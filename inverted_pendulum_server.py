@@ -44,6 +44,8 @@ def advance_one_step(pend_cart, u, state, timestep):
     res = solve_ivp(pend_cart.deriv, [0, timestep], state, args=[[u], 0])
     new_state = res.y[:, -1]
 
+    new_state[2] = np.remainder(new_state[2]+np.pi/2, 2*np.pi)-np.pi/2
+
     return new_state
 
 
