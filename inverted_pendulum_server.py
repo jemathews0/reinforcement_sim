@@ -72,17 +72,20 @@ def producer(pend_cart, socket, timestep, args):
         if command == APPLY_FORCE:
             u, = struct.unpack('f', message_bytes[4:])
             new_state = advance_one_step(pend_cart, u, state, timestep)
+            reward = get_reward(state, u, new_state)
 
-            response_bytes = struct.pack('iffff', NEW_STATE, *new_state)
+
+            response_bytes = struct.pack('ifffff', NEW_STATE, *new_state, reward)
             socket.send(response_bytes)
 
             state = new_state
         elif command == SET_STATE:
             x, xdot, theta, thetadot = struct.unpack('ffff', message_bytes[4:])
             new_state = [x, xdot, theta, thetadot]
+            reward = get_reward(state, 0, new_state)
 
 
-            response_bytes = struct.pack('iffff', NEW_STATE, *new_state)
+            response_bytes = struct.pack('ifffff', NEW_STATE, *new_state, reward)
             socket.send(response_bytes)
 
             state = new_state

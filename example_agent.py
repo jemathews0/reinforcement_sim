@@ -54,9 +54,10 @@ def main():
         response_command, = struct.unpack('i', response_bytes[0:4])
 
         if response_command == NEW_STATE:
-            x, xdot, theta, thetadot = struct.unpack(
-                'ffff', response_bytes[4:])
+            x, xdot, theta, thetadot, reward = struct.unpack(
+                'fffff', response_bytes[4:])
             new_state = [x, xdot, theta, thetadot]
+            print(new_state, reward)
         elif response_command == ANIMATE:
             animation_enabled, = struct.unpack('i', response_bytes[4:])
         else:

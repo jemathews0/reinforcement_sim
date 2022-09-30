@@ -28,6 +28,7 @@ struct NewStateCommand{
     float xdot;
     float theta;
     float thetadot;
+    float reward;
 };
 
 struct AnimateCommand{
@@ -97,6 +98,7 @@ int main ()
             float xdot = newStateCmdPtr->xdot;
             float theta = newStateCmdPtr->theta;
             float thetadot = newStateCmdPtr->thetadot;
+            float reward = newStateCmdPtr->reward;
 
         }
         else if (response_command == ANIMATE) {
